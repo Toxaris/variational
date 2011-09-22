@@ -2,6 +2,8 @@ import sbt._
 import eu.henkelmann.sbt.JUnitXmlTestsListener
 
 class variational(info: ProjectInfo) extends DefaultProject(info) with IdeaProject {
+    val junit = "junit" % "junit" % "4.8.1" % "test"
+    val scalatest = "org.scalatest" % "scalatest_2.9.0" % "1.6.1" % "test->default"
     val junitInterface = "com.novocode" % "junit-interface" % "0.6" % "test->default"
     val scalacheck = "org.scala-tools.testing" % "scalacheck_2.9.0" % "1.9" % "test->default"
     def junitXmlListener: TestReportListener = new JUnitXmlTestsListener(outputPath.toString)
