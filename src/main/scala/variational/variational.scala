@@ -153,6 +153,37 @@ object V {
     }
 }
 
+abstract class VFunction1 {
+  def apply[A](variational : V[A]) : V[A]
+}
+
+object Select {
+  def apply(variable : Int) = new VFunction1 {
+    def apply[A](variational : V[A]) = variational.select(variable)
+  }
+}
+
+object Deselect {
+  def apply(variable : Int) = new VFunction1 {
+    def apply[A](variational : V[A]) = variational.deselect(variable)
+  }
+}
+
+abstract class Structure[A] extends V[A] { this : A =>
+  import collection.mutable
+
+  override def flatMap[B](f : A => V[B]) : V[B] = f(this)
+
+  /** Map over all variability-aware subtrees. */
+  def all(f : VFunction1) : V[A]
+
+  def select(variable : Int) : V[A] = all(Select(variable))
+  def deselect(variable : Int) : V[A] = all(Deselect(variable))
+
+  def map[B](f : (A) => B, cache : mutable.Map[A, V[B]]) =
+    cache.getOrElseUpdate(this, V(f(this)))
+}
+
 class Choice[A](val condition : Int, val thenBranch : V[A], val elseBranch : V[A]) extends V[A] {
   import scala.collection.mutable
 
