@@ -83,7 +83,6 @@ class Tests extends FunSuite with ShouldMatchers {
     f(a) should equal(Choice(0, VariationalLike(2), Choice(1, VariationalLike(6), VariationalLike(10))))
   }
 
-  /*
   test("decomposition") {
       val v = Choice(1, Choice(2, VariationalLike("foo"), VariationalLike("bar")), Choice(3, VariationalLike("foo"), VariationalLike("bar")))
       v.decompose should equal (Choice(1, Choice(2, VariationalLike(0), VariationalLike(1)), Choice(3, VariationalLike(0), VariationalLike(1))), Seq("foo", "bar"))
@@ -106,5 +105,4 @@ class Tests extends FunSuite with ShouldMatchers {
 
       result should equal (Choice(0, Choice(1, VariationalLike('a'), VariationalLike('A')), Choice(1, VariationalLike('b'), VariationalLike('B'))))
   }
-  */
 }

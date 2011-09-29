@@ -84,6 +84,34 @@ abstract class Variational {
   // def flatMap[VB <: VariationalLike[VB]](f : A => VB) : VB
 
   def zipWith[B, C, VC <: VariationalLike[VC]](f : (Value, B) => C, that : Container[B])(implicit lift : Lift[C, VC]) : VC
+
+  def decompose : (Generic[Int], Seq[Value]) = {
+    val cache = scala.collection.mutable.Map[Value, Int]()
+    val builder = Seq.newBuilder[Value]
+    var nextIndex = 0
+
+    val indices = for {
+      element <- this
+    } yield {
+      cache.getOrElseUpdate(element, {
+        val index = nextIndex
+        nextIndex += 1
+        builder += element
+        index
+      })
+    }
+
+    (indices, builder.result)
+  }
+
+  def flatMap[V <: VariationalLike[V]](f : Value => V) : V =
+    decompose match {
+      case (indices, values) => VariationalLike.index(values.map(f), indices)
+    }
+}
+
+object Variational {
+  implicit def liftGeneric[A] : Lift[A, Generic[A]] = Generic.liftGenericVariational
 }
 
 /**
@@ -111,6 +139,7 @@ trait Container[A] extends Variational {
   type This <: Container[A]
   type Value = A
 }
+
 
 object Container {
   implicit def pimpApply[A, B](function : Container[A => B]) = new {
@@ -160,29 +189,6 @@ def zipWith[B <: VariationalLike[B], C <: VariationalLike[C]](f : (A, B) => C, t
 def zip[B](that : VariationalLike[B]) : VariationalLike[(A, B)] =
  zipWith((a : A, b : B) => (a, b), that)
 
-def decompose : (VariationalLike[Int], Seq[A]) = {
- val cache = scala.collection.mutable.Map[A, Int]()
- val builder = Seq.newBuilder[A]
- var nextIndex = 0
-
- val indices = for {
-   element <- this
- } yield {
-   cache.getOrElseUpdate(element, {
-     val index = nextIndex
-     nextIndex += 1
-     builder += element
-     index
-   })
- }
-
- (indices, builder.result)
-}
-
-def flatMap[B](f : A => VariationalLike[B]) : VariationalLike[B] =
- decompose match {
-   case (indices, values) => VariationalLike.index(values.map(f), indices)
- }
 */
 
 abstract class Choice[This <: VariationalLike[This]](val condition : Int, val thenBranch : This, val elseBranch : This) extends VariationalLike[This] {
@@ -284,34 +290,34 @@ object VariationalLike {
         case None => nextCondition2
         case Some(condition1) => nextCondition2 match {
           case None => Some(condition1)
-          case Some(condition2) => Some(scala.math.min(condition1, condition2))
+          case Some(condition2) => Some(math.min(condition1, condition2))
         }
       }
     }
   }
 
-  /*
-  def index[A](values : Seq[VariationalLike[A]], indices : VariationalLike[Int]) : VariationalLike[A] =
-    indices match {
-      case Constant(i) => values(i)
-      case Choice(condition, thenBranch, elseBranch) => {
-        val variables =
-          for {
-            value <- values
-            variable <- value match {
-              case Constant(_) => Seq()
-              case Choice(variable, _, _) => Seq(variable)
-            }
-          } yield variable
-
-        val variable = (condition +: variables).min
-
-        Choice(variable,
-          index(values.map(_.select(variable)), indices.select(variable)),
-          index(values.map(_.deselect(variable)), indices.deselect(variable)))
+  object DependentList {
+    def unapply(scrutinee : (Variational, Seq[Variational])) : Option[Int] = {
+      (scrutinee._1.getCondition /: scrutinee._2) {
+        case (None, variational) => variational.getCondition
+        case (Some(condition1), variational) => variational.getCondition match {
+          case None => Some(condition1)
+          case Some(condition2) => Some(math.min(condition1, condition2))
+        }
       }
     }
-   */
+  }
+
+  def index[V <: VariationalLike[V]](values : Seq[V], indices : Container[Int]) : V =
+    (indices, values) match {
+      case DependentList(condition) => {
+        val thenBranch : V = index(values.map(_.select(condition)), indices.select(condition))
+        val elseBranch : V = index(values.map(_.deselect(condition)), indices.deselect(condition))
+        thenBranch.smartChoice(condition, elseBranch)
+      }
+      case _ =>
+        values(indices.getValue.get)
+    }
 }
 
 abstract class VFunction1 {
