@@ -6,8 +6,6 @@ import org.scalatest.FunSuite
 import org.scalatest.matchers.ShouldMatchers
 
 class Tautologies extends FunSuite with ShouldMatchers {
-  import BDD.{BDD, pimpBDD}
-
   val A = BDD(0)
   val B = BDD(1)
   val C = BDD(2)
