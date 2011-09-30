@@ -185,7 +185,52 @@ object BDD {
       ("!" | "~" | "not") ^^ {
         case _ => !_
       }
-
   }
 
+  def parseDIMACS(source : Source) : BDD = {
+    val lines = source.getLines
+
+    val tokens = for {
+      line <- lines
+      if !(line startsWith "c")
+      token <- line split """\s+"""
+      if token != ""
+    } yield (token)
+
+    var result = BDD.High
+    var clause = BDD.Low
+
+    val p = tokens.next()
+    if (p != "p")
+    throw new Error("Missing problem line.")
+
+    val format = tokens.next()
+    if (format != "cnf")
+      throw new Error("Unknown format '" + format + "'")
+
+    val variables = Integer.parseInt(tokens.next())
+    val clauses = Integer.parseInt(tokens.next())
+
+    for (_ <- 1 to clauses) {
+      var clause = BDD.Low
+      var number = Integer.parseInt(tokens.next())
+
+      while (number != 0) {
+        if (number < 0)
+          clause ||= !BDD(-number - 1)
+        else
+          clause ||= BDD(number - 1)
+
+        number = Integer.parseInt(tokens.next())
+      }
+
+      result &&= clause
+    }
+
+    result
+  }
+
+
+  def parseDIMACS(url : URL) : BDD =
+    parseDIMACS(Source.fromURL(url))
 }
