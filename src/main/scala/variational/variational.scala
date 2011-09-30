@@ -1,6 +1,8 @@
 package variational
 
 import collection.mutable.WeakHashMap
+import ref.WeakReference
+import collection.mutable
 
 abstract class Lift[A, VA] {
   def apply(value : A) : VA
@@ -57,9 +59,24 @@ abstract class Variational {
   /**
    * Reuse an existing choice node. If no such choice node is
    * cached, return and cache the third argument.
+   *
+   * <p>TODO: Add a queue to reclaim hash entries for collected
+   * weak references.
    */
-  def getChoiceOrElseUpdate(condition : Int, that : This, choice : => This) : This =
-    cache.getOrElseUpdate(condition, WeakHashMap()).getOrElseUpdate(that, choice)
+  def getChoiceOrElseUpdate(condition : Int, that : This, choice : => This) : This = {
+    val subcache = cache.getOrElseUpdate(that, mutable.HashMap())
+
+    (for {
+      cached <- subcache.get(condition)
+      value <- cached.get
+    } yield (
+        value
+        )) getOrElse {
+      val result = choice
+      subcache.put(condition, new WeakReference(result))
+      result
+    }
+  }
 
   /**
    * Construct or reuse a choice node.
@@ -72,7 +89,7 @@ abstract class Variational {
   def deselect(variable : Int) : This
 
   private[this]
-  val cache : WeakHashMap[Int, WeakHashMap[This, This]] = WeakHashMap()
+  val cache : WeakHashMap[This, mutable.Map[Int, WeakReference[This]]] = WeakHashMap()
 
   /**
    * Construct a choice node and reinstate the invariants.
@@ -227,11 +244,11 @@ abstract class Choice[This <: VariationalLike[This]](val condition : Int, val th
       sameChoice(thenBranch.deselect(variable), elseBranch.deselect(variable))
 
   /*
-    import scala.collection.mutable
+   import scala.collection.mutable
 
-    def map[B](f : A => B, cache : mutable.Map[A, VariationalLike[B]]) : VariationalLike[B] =
-      Choice(condition, thenBranch.map(f, cache), elseBranch.map(f, cache))
-   */
+   def map[B](f : A => B, cache : mutable.Map[A, VariationalLike[B]]) : VariationalLike[B] =
+     Choice(condition, thenBranch.map(f, cache), elseBranch.map(f, cache))
+  */
 
   override def toString() =
     "Choice(" + condition + ", " + thenBranch + ", " + elseBranch + ")"
@@ -371,41 +388,6 @@ object Choice {
   def unapply[A <: VariationalLike[A]](variational : Choice[A]) : Some[(Int, A, A)] =
     Some((variational.condition, variational.thenBranch, variational.elseBranch))
 }
-
-/*
-class Constant[A](val value : A) extends VariationalLike[A] {
-
-  import scala.collection.mutable
-
-  def map[B](f : A => B, cache : mutable.Map[A, VariationalLike[B]]) =
-    cache.getOrElseUpdate(value, Constant(f(value)))
-
-  def select(variable : Int) : VariationalLike[A] =
-    this
-
-  def deselect(variable : Int) : VariationalLike[A] =
-    this
-
-  override def toString() =
-    "Constant(" + value + ")"
-}
-
-object Constant {
-
-  import scala.collection.mutable.WeakHashMap
-
-  type Cache[A] = WeakHashMap[A, Constant[A]]
-
-  val cache : Cache[Any] = WeakHashMap()
-
-  def apply[A](value : A) : Constant[A] =
-    cache.asInstanceOf[Cache[A]].getOrElseUpdate(value, new Constant(value))
-
-  def unapply[A](variational : Constant[A]) : Some[A] =
-    Some(variational.value)
-}
- */
-
 
 /**
  * Structural nodes which may contain further variability in

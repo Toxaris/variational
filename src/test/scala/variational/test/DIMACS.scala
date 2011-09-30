@@ -11,6 +11,8 @@ import variational.BDD
  */
 
 class DIMACS extends FunSuite with ShouldMatchers {
+  // val runtime = Runtime.getRuntime()
+
   for (n <- 1 to 50) {
     val name = "uf20-0" + n + ".cnf"
     val url = getClass.getResource(name)
@@ -19,6 +21,10 @@ class DIMACS extends FunSuite with ShouldMatchers {
         assert(false, "resource not found")
       else
         BDD.parseDIMACS(url) should not equal (BDD.Low)
+
+      // runtime.gc()
+      // println("used memory = " + (runtime.totalMemory() - runtime.freeMemory()))
     }
+
   }
 }
