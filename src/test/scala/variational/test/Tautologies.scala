@@ -2,10 +2,12 @@ package variational.test
 
 import variational._
 
-import org.scalatest.FunSuite
 import org.scalatest.matchers.ShouldMatchers
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 
-class Tautologies extends FunSuite with ShouldMatchers {
+@RunWith(classOf[JUnitRunner])
+class Tautologies extends org.scalatest.FunSuite with ShouldMatchers {
   val A = BDD(0)
   val B = BDD(1)
   val C = BDD(2)

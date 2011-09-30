@@ -6,7 +6,10 @@ import org.scalatest.FunSuite
 import org.scalatest.matchers.ShouldMatchers
 
 import Generic.liftGenericVariational
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 
+@RunWith(classOf[JUnitRunner])
 class Tests extends FunSuite with ShouldMatchers {
   test("smart choice 1") {
     val v1 = Choice(0, VariationalLike(1), VariationalLike(2))
