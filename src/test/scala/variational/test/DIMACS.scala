@@ -3,6 +3,8 @@ package variational.test
 import org.scalatest.FunSuite
 import org.scalatest.matchers.ShouldMatchers
 import variational.BDD
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 
 /**
  * Tests for BDD.parseDIMACS
@@ -10,6 +12,7 @@ import variational.BDD
  * @author Tillmann Rendel
  */
 
+@RunWith(classOf[JUnitRunner])
 class DIMACS extends FunSuite with ShouldMatchers {
   // val runtime = Runtime.getRuntime()
 
