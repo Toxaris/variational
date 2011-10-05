@@ -39,9 +39,10 @@ abstract class Variational {
    */
   def exposeChoice : Option[(Int, This, This)]
 
-
-  def all(f : VFunction1) : This
-
+  /**
+   * Map a function over the corresponding children of two nodes.
+   * The nodes need to have the same top-level structure.
+   */
   def all2(f : VFunction2, that : This) : Option[This]
 
   /**
@@ -221,11 +222,10 @@ abstract class Choice[This <: VariationalLike[This]](val condition : Int, val th
 
   def exposeChoice = Some(condition, thenBranch, elseBranch)
 
-  def all(f : VFunction1) =
-    sameChoice(thenBranch.all(f), elseBranch.all(f))
-
   def all2(f : VFunction2, that : This) =
     None
+
+  def children = Seq(thenBranch, elseBranch)
 
   def select(variable : Int) =
     if (variable < condition)
@@ -287,13 +287,13 @@ object VariationalLike {
     def unapply(scrutinee : (Variational, Variational)) : Boolean = {
       val (scrutinee1, scrutinee2) = scrutinee
       val class1 = scrutinee1.getClass
-      scrutinee1.isInstanceOf[Structure[_]] && class1 == scrutinee2.getClass
+      scrutinee1.isInstanceOf[StructureLike[_]] && class1 == scrutinee2.getClass
     }
 
     def unapply(scrutinee : (Variational, Variational, Variational)) : Boolean = {
       val (scrutinee1, scrutinee2, scrutinee3) = scrutinee
       val class1 = scrutinee1.getClass
-      scrutinee1.isInstanceOf[Structure[_]] && class1 == scrutinee2.getClass && class1 == scrutinee3.getClass
+      scrutinee1.isInstanceOf[StructureLike[_]] && class1 == scrutinee2.getClass && class1 == scrutinee3.getClass
     }
   }
 
@@ -391,14 +391,36 @@ object Choice {
 
 /**
  * Structural nodes which may contain further variability in
- * subtrees.
+ * subtrees. Maximal variational subtrees are called children
+ * of the node.
  */
-trait Structure[This <: VariationalLike[This]] extends VariationalLike[This] {
+trait StructureLike[This <: VariationalLike[This]] extends VariationalLike[This] {
   this : This =>
+
+  /**
+   * Return the children of this node.
+   */
+  def children : Seq[Variational]
+
+  /**
+   * Map a function over all children of this node.
+   */
+  def all(f : VFunction1) : This
+
   def exposeChoice = for {
     condition <- getCondition
   } yield {
     (condition, select(condition), deselect(condition))
+  }
+
+  def getCondition : Option[Int] = {
+    val f : (Option[Int], Option[Int]) => Option[Int] = {
+      case (None, x) => x
+      case (x, None) => x
+      case (Some(condition1), Some(condition2)) => Some(math.min(condition1, condition2))
+    }
+
+    children.map(_.getCondition).fold(None)(f)
   }
 
   def getStructure = Some(getClass)
@@ -408,10 +430,8 @@ trait Structure[This <: VariationalLike[This]] extends VariationalLike[This] {
   def deselect(variable : Int) = all(Deselect(variable))
 }
 
-abstract class Simple[A, This <: VariationalLike[This]](val value : A) extends Structure[This] {
+abstract class Simple[A, This <: VariationalLike[This]](val value : A) extends StructureLike[This] {
   this : This =>
-
-  def getCondition = None
 
   def all(f : VFunction1) = this
 
@@ -420,6 +440,8 @@ abstract class Simple[A, This <: VariationalLike[This]](val value : A) extends S
       Some(this)
     else
       None
+
+  def children = Seq()
 
   override def toString =
     value.toString
@@ -432,6 +454,24 @@ trait SimpleContainer[A, VA <: VariationalContainer[A, VA]] extends VariationalC
     lift(f(value))
 
   def getValue = Some(value)
+}
+
+trait SelfContainer[A, VA <: VariationalContainer[A, VA]] extends VariationalContainer[A, VA] {
+  this : VA with A =>
+  def getValue = Some(this)
+
+  def map[B, VB <: VariationalLike[VB]](f : A => B)(implicit lift : Lift[B, VB]) =
+    lift(f(this))
+}
+
+trait Leaf[Self <: Variational with VariationalLike[Self]] extends VariationalLike[Self] {
+  this : Self =>
+  def all(f : VFunction1) = this
+
+  def all2(f : VFunction2, that : Self) =
+    if (this == that) Some(this) else None
+
+  def children = Seq()
 }
 
 trait Generic[A] extends VariationalContainer[A, Generic[A]] {
