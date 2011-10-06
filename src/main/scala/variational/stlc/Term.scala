@@ -14,7 +14,6 @@ trait Term extends VariationalContainer[Term.Structure, Term] {
 }
 
 object Term {
-
   implicit def liftTerm : Lift[Structure, Term] = new Lift[Structure, Term] {
     def apply(value : Structure) =
       value
@@ -22,7 +21,14 @@ object Term {
 
   trait Structure extends Term with StructureLike[Term] with SelfContainer[Structure, Term]
 
-  class Var(val identifier : String) extends Structure with Leaf[Term]
+  class Var(val identifier : String) extends Structure with Leaf[Term] {
+    override def toString = "Var(\"" + identifier + "\")"
+  }
+
+  object Var {
+    def apply(identifier : String) =
+      new Var(identifier)
+  }
 
   class App(val operator : Term, val operand : Term) extends Structure {
     def all(f : VFunction1) =
@@ -37,6 +43,8 @@ object Term {
       }
 
     def children = Seq(operator, operand)
+
+    override def toString = "App(" + operator + ", " + operand + ")"
   }
 
   object App {
@@ -57,11 +65,12 @@ object Term {
       }
 
     def children = Seq(qualifier, body)
+
+    override def toString = "Abs(" + identifier + ", " + qualifier + ", " + body + ")"
   }
 
   object Abs {
     def apply(identifier : String, qualifier : Type, body : Term) =
       new Abs(identifier, qualifier, body)
   }
-
 }
