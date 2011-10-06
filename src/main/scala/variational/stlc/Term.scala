@@ -26,7 +26,7 @@ object Term {
   }
 
   object Var {
-    def apply(identifier : String) =
+    def apply(identifier : String) : Term =
       new Var(identifier)
   }
 
@@ -48,7 +48,7 @@ object Term {
   }
 
   object App {
-    def apply(operator : Term, operand : Term) =
+    def apply(operator : Term, operand : Term) : Term =
       new App(operator, operand)
   }
 
@@ -70,7 +70,7 @@ object Term {
   }
 
   object Abs {
-    def apply(identifier : String, qualifier : Type, body : Term) =
+    def apply(identifier : String, qualifier : Type, body : Term) : Term =
       new Abs(identifier, qualifier, body)
   }
 }
