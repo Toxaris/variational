@@ -30,28 +30,20 @@ class GraphViz extends Memoize[Any, String] {
         builder ++= "  " + node + " [label=\"" + c.condition + "?\", shape=diamond];\n"
 
         val thenBranchNode = apply(c.thenBranch)
-        builder ++= "  " + node + " -> " + thenBranchNode + ";\n"
+        builder ++= "  " + node + " -> " + thenBranchNode + "[label = \"yes\"];\n"
 
         val elseBranchNode = apply(c.elseBranch)
-        builder ++= "  " + node + " -> " + elseBranchNode + ";\n"
-      }
-
-      case l : Leaf[_] => {
-        builder ++= "  " + node + " [label=\"" + escape(l.toString) + "\", shape=box];\n"
-      }
-
-      case s : Simple[_,  _] => {
-        builder ++= "  " + node + " [label=\"" + s.prefix + "\", shape=box];\n"
-        val childNode = apply(s.value)
-        builder ++= "  " + node + " -> " + childNode + ";\n"
+        builder ++= "  " + node + " -> " + elseBranchNode + "[label = \"no\"];\n"
       }
 
       case s : StructureLike[_] => {
         builder ++= "  " + node + " [label=\"" + s.prefix + "\", shape=box];\n"
 
+        var i = 0
         for (child <- s.children) {
           val childNode = apply(child)
-          builder ++= "  " + node + " -> " + childNode + ";\n"
+          builder ++= "  " + node + " -> " + childNode + " [label= \"" + i + "\"];\n"
+          i += 1
         }
       }
 

@@ -1,6 +1,7 @@
 package variational.stlc
 
 import variational._
+import collection.mutable.{Map, WeakHashMap}
 
 /**
  * Variational terms of the simply-typed lambda calculus.
@@ -9,6 +10,16 @@ import variational._
  */
 
 trait Term extends VariationalContainer[Term.Structure, Term] {
+  private[this] val appCache : WeakHashMap[Term, Term] = WeakHashMap()
+
+  def getAppOrElseUpdate(operand : Term, app : => Term) : Term =
+    appCache.getOrElseUpdate(operand, app)
+
+  private[this] val absCache : Map[String, WeakHashMap[Type, Term]] = Map()
+
+  def getAbsOrElseUpdate(identifier : String, qualifier : Type, abs : => Term) : Term =
+    absCache.getOrElseUpdate(identifier, WeakHashMap()).getOrElseUpdate(qualifier, abs)
+
   def newChoice(condition : Int, that : Term) =
     new Choice(condition, this, that) with ChoiceContainer[Term.Structure, Term] with Term
 }
@@ -22,13 +33,15 @@ object Term {
   trait Structure extends Term with StructureLike[Term] with SelfContainer[Structure, Term]
 
   class Var(val identifier : String) extends Structure with Leaf[Term] {
-    override def toString = prefix + "(\"" + identifier + "\")"
     def prefix = "Var"
+    def children = Seq(identifier)
   }
 
   object Var {
+    val cache : Map[String, Term] = Map()
+
     def apply(identifier : String) : Term =
-      new Var(identifier)
+      cache.getOrElseUpdate(identifier, new Var(identifier))
   }
 
   class App(val operator : Term, val operand : Term) extends Structure {
@@ -45,15 +58,12 @@ object Term {
 
     def children = Seq(operator, operand)
 
-    override def toString =
-      prefix + "(" + operator + ", " + operand + ")"
-
     def prefix = "App"
   }
 
   object App {
     def apply(operator : Term, operand : Term) : Term =
-      new App(operator, operand)
+      operator.getAppOrElseUpdate(operand, new App(operator, operand))
   }
 
   class Abs(val identifier : String, val qualifier : Type, val body : Term) extends Structure {
@@ -68,16 +78,13 @@ object Term {
         None
       }
 
-    def children = Seq(qualifier, body)
-
-    override def toString =
-      prefix + "(" + identifier + ", " + qualifier + ", " + body + ")"
+    def children = Seq(identifier, qualifier, body)
 
     def prefix = "Abs"
   }
 
   object Abs {
     def apply(identifier : String, qualifier : Type, body : Term) : Term =
-      new Abs(identifier, qualifier, body)
+      body.getAbsOrElseUpdate(identifier, qualifier, new Abs(identifier, qualifier, body))
   }
 }

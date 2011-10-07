@@ -23,6 +23,8 @@ object Type {
 
   class Var(val identifier : String) extends Structure with Leaf[Type] {
     def prefix = "Var"
+
+    def children = Seq(identifier)
   }
 
   class Fun(val domain : Type, val codomain : Type) extends Structure {

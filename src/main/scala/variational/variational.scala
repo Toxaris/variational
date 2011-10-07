@@ -284,19 +284,20 @@ object VariationalLike {
   }
 
   object Structural {
-    def unapply(scrutinee : (Variational, Variational)) : Boolean = {
-      val (scrutinee1, scrutinee2) = scrutinee
-      val class1 = scrutinee1.getClass
-      scrutinee1.isInstanceOf[StructureLike[_]] && class1 == scrutinee2.getClass
-    }
+    def unapply(scrutinee : (Variational, Variational)) : Boolean =
+      scrutinee match {
+        case (scrutinee1 : StructureLike[_], scrutinee2 : StructureLike[_]) =>
+          scrutinee1.sameHead(scrutinee2)
+        case _ => false
+      }
 
-    def unapply(scrutinee : (Variational, Variational, Variational)) : Boolean = {
-      val (scrutinee1, scrutinee2, scrutinee3) = scrutinee
-      val class1 = scrutinee1.getClass
-      scrutinee1.isInstanceOf[StructureLike[_]] && class1 == scrutinee2.getClass && class1 == scrutinee3.getClass
-    }
+    def unapply(scrutinee : (Variational, Variational, Variational)) : Boolean =
+      scrutinee match {
+        case (scrutinee1 : StructureLike[_], scrutinee2 : StructureLike[_], scrutinee3 : StructureLike[_]) =>
+          scrutinee1.sameHead(scrutinee2) && scrutinee2.sameHead(scrutinee3)
+        case _ => false
+      }
   }
-
 
   object Dependent {
     def unapply(scrutinee : (Variational, Variational)) : Option[Int] = {
@@ -350,10 +351,10 @@ class SmartChoice(variable : Int) extends VFunction2 {
     (variational1, variational2) match {
       case VariationalLike.Equal() =>
         variational1
-      case VariationalLike.Constant() =>
-        variational1.makeChoice(variable, variational2)
       case VariationalLike.Structural() =>
         variational1.all2(this, variational2).get
+      case VariationalLike.Constant() =>
+        variational1.makeChoice(variable, variational2)
       case VariationalLike.Dependent(condition) if variable < condition =>
         variational1.makeChoice(variable, variational2)
       case VariationalLike.Dependent(condition) if variable == condition =>
@@ -400,10 +401,10 @@ trait StructureLike[This <: VariationalLike[This]] extends VariationalLike[This]
   /**
    * Return the children of this node.
    */
-  def children : Seq[Variational]
+  def children : Seq[Any]
 
   /**
-   * Map a function over all children of this node.
+   * Map a function over all (variational) children of this node.
    */
   def all(f : VFunction1) : This
 
@@ -411,6 +412,23 @@ trait StructureLike[This <: VariationalLike[This]] extends VariationalLike[This]
    * Return the name of the structure of this node.
    */
   def prefix : String
+
+  override def toString =
+    children.mkString(prefix + "(", ", ", ")")
+
+  /**
+   * Decide whether two nodes have the same top-level structure.
+   *
+   * <p>This method returns <code>true</code> if both nodes are
+   * instances of the same class and all non-variational children
+   * are equal according to <code>==</code>.
+   */
+  def sameHead(that : StructureLike[_]) : Boolean =
+    this.getClass == that.getClass &&
+      (this.children zip that.children map {
+      case (_ : Variational, _ : Variational) => true
+      case (x, y) => x == y
+    }).foldLeft(true)(_ && _)
 
   def exposeChoice = for {
     condition <- getCondition
@@ -425,7 +443,10 @@ trait StructureLike[This <: VariationalLike[This]] extends VariationalLike[This]
       case (Some(condition1), Some(condition2)) => Some(math.min(condition1, condition2))
     }
 
-    children.map(_.getCondition).fold(None)(f)
+    (children map {
+      case v : Variational => v.getCondition
+      case _ => None
+    }).fold(None)(f)
   }
 
   def getStructure = Some(getClass)
@@ -446,7 +467,7 @@ abstract class Simple[A, This <: VariationalLike[This]](val value : A) extends S
     else
       None
 
-  def children = Seq()
+  def children = Seq(value)
 
   override def toString =
     value.toString
@@ -478,8 +499,6 @@ trait Leaf[Self <: Variational with VariationalLike[Self]] extends VariationalLi
 
   def all2(f : VFunction2, that : Self) =
     if (this == that) Some(this) else None
-
-  def children = Seq()
 }
 
 trait Generic[A] extends VariationalContainer[A, Generic[A]] {
