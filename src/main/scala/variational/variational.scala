@@ -407,6 +407,11 @@ trait StructureLike[This <: VariationalLike[This]] extends VariationalLike[This]
    */
   def all(f : VFunction1) : This
 
+  /**
+   * Return the name of the structure of this node.
+   */
+  def prefix : String
+
   def exposeChoice = for {
     condition <- getCondition
   } yield {
@@ -444,6 +449,9 @@ abstract class Simple[A, This <: VariationalLike[This]](val value : A) extends S
   def children = Seq()
 
   override def toString =
+    value.toString
+
+  override def prefix =
     value.toString
 }
 

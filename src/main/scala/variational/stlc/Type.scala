@@ -21,7 +21,9 @@ object Type {
 
   trait Structure extends Type with StructureLike[Type] with SelfContainer[Structure, Type]
 
-  class Var(val identifier : String) extends Structure with Leaf[Type]
+  class Var(val identifier : String) extends Structure with Leaf[Type] {
+    def prefix = "Var"
+  }
 
   class Fun(val domain : Type, val codomain : Type) extends Structure {
     def all(f : VFunction1) =
@@ -36,6 +38,8 @@ object Type {
       }
 
     def children = Seq(domain, codomain)
+
+    def prefix = "Fun"
   }
 
   object Fun {

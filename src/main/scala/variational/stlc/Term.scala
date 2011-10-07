@@ -22,7 +22,8 @@ object Term {
   trait Structure extends Term with StructureLike[Term] with SelfContainer[Structure, Term]
 
   class Var(val identifier : String) extends Structure with Leaf[Term] {
-    override def toString = "Var(\"" + identifier + "\")"
+    override def toString = prefix + "(\"" + identifier + "\")"
+    def prefix = "Var"
   }
 
   object Var {
@@ -44,7 +45,10 @@ object Term {
 
     def children = Seq(operator, operand)
 
-    override def toString = "App(" + operator + ", " + operand + ")"
+    override def toString =
+      prefix + "(" + operator + ", " + operand + ")"
+
+    def prefix = "App"
   }
 
   object App {
@@ -66,7 +70,10 @@ object Term {
 
     def children = Seq(qualifier, body)
 
-    override def toString = "Abs(" + identifier + ", " + qualifier + ", " + body + ")"
+    override def toString =
+      prefix + "(" + identifier + ", " + qualifier + ", " + body + ")"
+
+    def prefix = "Abs"
   }
 
   object Abs {
