@@ -10,7 +10,7 @@ import java.io.FileWriter
  *
  * @author Tillmann Rendel
  */
-class GraphViz extends Memoize[Any, String] {
+class GraphViz(val variables : Array[String] = Array.empty) extends Memoize[Any, String] {
 
   def escape(text : String) =
     text.replaceAllLiterally("\"", "\\\"")
@@ -27,7 +27,11 @@ class GraphViz extends Memoize[Any, String] {
 
     value match {
       case c : Choice[_] => {
-        builder ++= "  " + node + " [label=\"" + c.condition + "?\", shape=diamond];\n"
+        val condition =
+          if (c.condition < variables.length)
+            variables(c.condition)
+          else c.condition.toString
+        builder ++= "  " + node + " [label=\"" + condition + "?\", shape=diamond];\n"
 
         val thenBranchNode = apply(c.thenBranch)
         builder ++= "  " + node + " -> " + thenBranchNode + "[label = \"yes\"];\n"
@@ -57,13 +61,13 @@ class GraphViz extends Memoize[Any, String] {
 }
 
 object GraphViz {
-  def asString(value : Any) : String = {
-    val graphViz = new GraphViz
+  def asString(value : Any, variables : Array[String] = Array.empty) : String = {
+    val graphViz = new GraphViz(variables)
     graphViz.process(value)
     "digraph variational {\n" + graphViz.result + "}\n"
   }
 
-  def asFile(value : Any, filename : String) = {
+  def asFile(value : Any, filename : String, variables : Array[String] = Array.empty) = {
     val fw = new FileWriter(filename);
     fw.write(asString(value));
     fw.close()
