@@ -121,18 +121,18 @@ object BDD {
 
   class Parser extends RegexParsers {
     var nextVariable = 0
-    val variables : mutable.Map[String, BDD] = mutable.Map()
+    val variables : mutable.Map[String, Int] = mutable.Map()
 
     def stringToVariable(name : String) : BDD =
-      variables.getOrElseUpdate(name, {
-        val result = BDD(nextVariable)
+      BDD(variables.getOrElseUpdate(name, {
+        val result = nextVariable
         nextVariable += 1
         result
-      })
+      }))
 
-    def parseString(text : String) : BDD =
+    def parseString(text : String) : (Map[String, Int], BDD) =
       parseAll(expression, text) match {
-        case Success(result, _) => result
+        case Success(result, _) => (variables.toMap, result)
       }
 
     def expression =
