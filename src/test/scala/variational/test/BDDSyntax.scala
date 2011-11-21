@@ -121,4 +121,6 @@ class BDDSyntax extends FunSuite with ShouldMatchers  {
 
   testParseResource("medium.formula")
 
+  testParseResource("typeerror.formula")
+
 }
