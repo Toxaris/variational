@@ -2,8 +2,8 @@ package variational
 
 import collection.mutable
 import util.parsing.combinator.RegexParsers
-import io.Source
 import java.net.URL
+import io.{BufferedSource, Source}
 
 trait BDD extends VariationalContainer[Boolean, BDD] {
 
@@ -103,13 +103,19 @@ object BDD {
   /**
    * Read a propositional expression from a url.
    */
-  def fromURL(url : URL) = {
+  def fromURL(url : URL) =
+    BDD.fromSource(Source.fromURL(url))
+
+  /**
+   * Read a propositional expression from a source.
+   */
+  def fromSource(source : BufferedSource) = {
     val parser = new Parser
-    val reader = Source.fromURL(url).reader()
+    val reader = source.reader();
 
     val result = parser.parseAll(parser.expression, reader)
     result match {
-      case parser.Success(result, _) => result
+      case parser.Success(finalResult, _) => finalResult
     }
   }
 
@@ -188,7 +194,7 @@ object BDD {
   }
 
   def parseDIMACS(source : Source) : BDD = {
-    val lines = source.getLines
+    val lines = source.getLines()
 
     val tokens = for {
       line <- lines
@@ -230,7 +236,13 @@ object BDD {
     result
   }
 
-
   def parseDIMACS(url : URL) : BDD =
     parseDIMACS(Source.fromURL(url))
+}
+
+object SimplifyBDD {
+  def main(args : Array[String]) {
+    val bdd = BDD.fromSource(Source.stdin)
+    println(bdd.toString)
+  }
 }
