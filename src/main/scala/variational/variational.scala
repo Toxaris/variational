@@ -467,7 +467,7 @@ abstract class Simple[A, This <: VariationalLike[This]](val value : A) extends S
     else
       None
 
-  def children = Seq(value)
+  def children = Seq.empty // Seq(value)
 
   override def toString =
     value.toString
