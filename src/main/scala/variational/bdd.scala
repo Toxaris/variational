@@ -115,7 +115,13 @@ object BDD {
 
     val result = parser.parseAll(parser.expression, reader)
     result match {
-      case parser.Success(finalResult, _) => finalResult
+      case parser.Success(finalResult, _) => {
+        val variables = new Array[String](parser.nextVariable)
+        for ((key, value) <- parser.variables) {
+          variables(value) = key
+        }
+        (variables, finalResult)
+      }
     }
   }
 
@@ -242,7 +248,7 @@ object BDD {
 
 object SimplifyBDD {
   def main(args : Array[String]) {
-    val bdd = BDD.fromSource(Source.stdin)
+    val (_, bdd) = BDD.fromSource(Source.stdin)
     println(bdd.toString)
   }
 }
