@@ -246,9 +246,9 @@ object BDD {
     parseDIMACS(Source.fromURL(url))
 }
 
-object SimplifyBDD {
+object VisualizeBDD {
   def main(args : Array[String]) {
-    val (_, bdd) = BDD.fromSource(Source.stdin)
-    println(bdd.toString)
+    val (variables, bdd) = BDD.fromSource(Source.stdin)
+    println(GraphViz.asString(bdd, variables))
   }
 }
