@@ -83,6 +83,20 @@ class GraphViz(val variables : Array[String] = Array.empty) extends Memoize[Any,
         builder ++= "];\n"
       }
 
+      case s : Simple[_, _] => {
+        builder ++= "  " + node
+        builder ++= " [label=\""
+        builder ++= s.value.toString
+        builder ++= "\", "
+        builder ++= "color=\"" + structureColor + "\", "
+        builder ++= "fillcolor=\"" + structureFillColor + "\", "
+        builder ++= "fontname=\"" + structureFontName + "\", "
+        builder ++= "fontsize=\"" + structureFontSize + "\", "
+        builder ++= "style=\"filled\", "
+        builder ++= "shape=\"box\""
+        builder ++= "];\n"
+      }
+
       case s : StructureLike[_] => {
         builder ++= "  " + node
         builder ++= " [label=\""
