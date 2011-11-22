@@ -14,10 +14,11 @@ import org.scalatest.junit.JUnitRunner
  */
 
 @RunWith(classOf[JUnitRunner])
-class BDDSyntax extends FunSuite with ShouldMatchers  {
+class BDDSyntax extends FunSuite with ShouldMatchers {
   def testParse(text : String)(expected : BDD) {
     test(text) {
-      BDD.fromString(text) should equal (expected)
+      val (_, result) : (Map[String, Int], BDD) = BDD.fromString(text)
+      result should equal(expected)
     }
   }
 
@@ -27,7 +28,7 @@ class BDDSyntax extends FunSuite with ShouldMatchers  {
       if (url == null)
         assert(false, "unknown resource: " + resource)
       else
-        print(BDD.fromURL(url))
+        BDD.fromURL(url)
     }
   }
 
