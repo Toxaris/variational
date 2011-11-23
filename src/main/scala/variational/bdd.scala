@@ -214,7 +214,7 @@ object BDD {
 
     val p = tokens.next()
     if (p != "p")
-    throw new Error("Missing problem line.")
+      throw new Error("Missing problem line.")
 
     val format = tokens.next()
     if (format != "cnf")
@@ -223,7 +223,7 @@ object BDD {
     val variables = Integer.parseInt(tokens.next())
     val clauses = Integer.parseInt(tokens.next())
 
-    for (_ <- 1 to clauses) {
+    for (i <- 1 to clauses) {
       var clause = BDD.Low
       var number = Integer.parseInt(tokens.next())
 
@@ -235,6 +235,8 @@ object BDD {
 
         number = Integer.parseInt(tokens.next())
       }
+
+      // println(("// " + i + ": " + clause + ".").take(80))
 
       result &&= clause
     }
@@ -248,7 +250,14 @@ object BDD {
 
 object VisualizeBDD {
   def main(args : Array[String]) {
-    val (variables, bdd) = BDD.fromSource(Source.stdin)
+    val (variables, bdd) =
+      (if (args.length > 0) args(0) else "--formula") match {
+        case "--formula" =>
+          BDD.fromSource(Source.stdin)
+        case "--dimacs" =>
+          (Array.empty[String], BDD.parseDIMACS(Source.stdin))
+      }
+
     println(GraphViz.asString(bdd, variables))
   }
 }
