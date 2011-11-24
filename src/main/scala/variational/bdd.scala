@@ -244,7 +244,12 @@ object BDD {
       }
   }
 
-  def parseDIMACS(source : Source) : BDD = {
+  def loadTranslate(source : Source) : Int => Int =
+    (for (line <- source.getLines) yield {
+      line.toInt
+    }).toArray
+
+  def parseDIMACS(source : Source, translate : Int => Int = identity) : BDD = {
     val lines = source.getLines()
 
     val tokens = for {
@@ -274,9 +279,9 @@ object BDD {
 
       while (number != 0) {
         if (number < 0)
-          clause ||= !BDD(-number - 1)
+          clause ||= !BDD(translate(-number - 1))
         else
-          clause ||= BDD(number - 1)
+          clause ||= BDD(translate(number - 1))
 
         number = Integer.parseInt(tokens.next())
       }
@@ -301,6 +306,14 @@ object VisualizeBDD {
           BDD.fromSource(Source.stdin)
         case "--dimacs" =>
           (Array.empty[String], BDD.parseDIMACS(Source.stdin))
+        case "--linux" => {
+          val transform = BDD.loadTranslate(Source.stdin)
+          // val time = compat.Platform.currentTime;
+          val result = (Array.empty[String], BDD.parseDIMACS(Source.fromFile("src/test/resources/variational/test/2.6.33.3-2var.dimacs"), transform))
+          // val elapsed = compat.Platform.currentTime - time;
+          // System.err.println("elapsed: " + elapsed)
+          result
+        }
         case "--undertaker" =>
           BDD.parseUndertaker(Source.stdin)
       }
