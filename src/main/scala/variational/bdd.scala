@@ -4,6 +4,7 @@ import collection.mutable
 import util.parsing.combinator.RegexParsers
 import java.net.URL
 import io.{BufferedSource, Source}
+import variational.BDD.Parser
 
 trait BDD extends VariationalContainer[Boolean, BDD] {
 
@@ -124,6 +125,50 @@ object BDD {
       }
     }
   }
+
+  class UndertakerParser extends Parser {
+    def line : Parser[BDD] =
+      symbolExpression ~ (("\"" ~> expression <~ "\"" | success(BDD(false)))) ^^ {
+        case sym ~ exp => sym -> exp
+      }
+
+    def parseLine(text : String) : BDD =
+      parseAll(line, text) match {
+        case Success(result, _) => result
+      }
+  }
+
+  def parseUndertaker(source : Source) = {
+    val parser = new UndertakerParser
+
+    var result = BDD(true)
+    // var i = 0
+
+    for (line <- source.getLines) {
+      if (!line.startsWith("I: ")  && !line.startsWith("UNDERTAKER_SET")) {
+        // i += 1
+        // System.err.println(i + ": " + line.take(60))
+
+        val clause = parser.parseLine(line)
+
+        // val variables = new Array[String](parser.nextVariable)
+        // for ((key, value) <- parser.variables) {
+        //  variables(value) = key
+        // }
+
+        // GraphViz.asFile(result, "x86/result-" + i + ".dot", variables)
+        // GraphViz.asFile(clause, "x86/clause-" + i + ".dot", variables)
+        result &&= clause
+      }
+    }
+
+    val variables = new Array[String](parser.nextVariable)
+    for ((key, value) <- parser.variables) {
+      variables(value) = key
+    }
+    (variables, result)
+  }
+
 
   class Parser extends RegexParsers {
     var nextVariable = 0
@@ -256,6 +301,8 @@ object VisualizeBDD {
           BDD.fromSource(Source.stdin)
         case "--dimacs" =>
           (Array.empty[String], BDD.parseDIMACS(Source.stdin))
+        case "--undertaker" =>
+          BDD.parseUndertaker(Source.stdin)
       }
 
     println(GraphViz.asString(bdd, variables))
