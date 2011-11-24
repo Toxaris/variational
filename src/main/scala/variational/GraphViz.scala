@@ -140,7 +140,7 @@ object GraphViz {
 
   def asFile(value : Any, filename : String, variables : Array[String] = Array.empty) = {
     val fw = new FileWriter(filename);
-    fw.write(asString(value));
+    fw.write(asString(value, variables));
     fw.close()
   }
 }
