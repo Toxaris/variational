@@ -130,6 +130,27 @@ abstract class Variational {
 
 object Variational {
   implicit def liftGeneric[A] : Lift[A, Generic[A]] = Generic.liftGenericVariational
+
+  def countChoiceNodes(value : Any) : Int = {
+    val seen : mutable.Set[Any] = mutable.Set()
+
+    def count(value : Any) : Int =
+      if (seen.contains(value))
+        0
+      else {
+        seen += value
+        value match {
+          case c : Choice[_] =>
+            1 + count(c.thenBranch) + count(c.elseBranch)
+          case s : StructureLike[_] =>
+            s.children.map(count).sum
+          case _ =>
+            0
+        }
+      }
+
+    count(value)
+  }
 }
 
 /**
